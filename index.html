@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>呱呱的成长管家 · 2025.5.28出生</title>
+<style>
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;background:#fffaf7;margin:0;padding:0 15px;color:#333;line-height:1.6;}
+  .header{text-align:center;padding:28px 0;background:linear-gradient(135deg,#ffb3ba,#ffdfba);color:#fff;margin:-15px -15px 25px;border-radius:0 0 30px 30px;}
+  .age{font-size:34px;font-weight:bold;margin:10px 0;color:#3388ff;} /* 蓝色字体定制 */
+  .section{margin:22px 0;background:#fff;border-radius:20px;padding:20px;box-shadow:0 8px 30px rgba(255,182,193,.15);}
+  h2{margin:0 0 18px;font-size:19px;color:#ff6b81;position:relative;padding-left:15px;}
+  h2::before{content:"";position:absolute;left:0;top:4px;width:6px;height:18px;background:#ff6b81;border-radius:3px;}
+  .item{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin:14px 0;padding:14px;background:#fff9f5;border-radius:12px;}
+  .item-name{flex:1 1 120px;font-size:16px;}
+  .item-input{display:flex;gap:6px;align-items:center;}
+  .item-input input{width:65px;padding:6px;text-align:center;border:1px solid #ffb3ba;border-radius:8px;font-size:15px;}
+  .item-stock{font-weight:bold;color:#ff6b81;font-size:16px;white-space:nowrap;}
+  .warn{color:#ff3b30 !important;}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:15px 0;}
+  .food{background:#fff9f5;border-radius:12px;padding:12px;text-align:center;font-size:14px;cursor:pointer;transition:.2s;}
+  .food.selected{background:#ff8ba7;color:#fff;}
+  .tag{display:inline-block;padding:6px 12px;border-radius:20px;font-size:13px;margin:4px 4px 4px 0;}
+  .testing{background:#fff3cd;color:#d4380d;}
+  .passed{background:#d4edda;color:#155724;}
+  .pending{background:#e2e3e5;color:#383d41;}
+  canvas{width:100%;height:300px;border-radius:12px;background:#fff9f5;margin:12px 0;}
+  .record-item{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:12px;background:#fff9f5;border-radius:10px;margin:8px 0;}
+  .countdown{text-align:center;padding:18px;background:#fff1f0;border-radius:15px;}
+  .countdown .big{font-size:32px;color:#ff6b81;font-weight:bold;}
+  input,select,button{padding:9px 12px;border-radius:8px;font-size:15px;margin:4px 0;}
+  input,select{border:1px solid #ffb3ba;}
+  button{background:#ff8ba7;color:#fff;border:none;cursor:pointer;}
+  .sync-btn{background:#3388ff;margin-top:10px;} /* 蓝色同步按钮 */
+  .footer{text-align:center;padding:40px 0;color:#aaa;font-size:14px;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="age" id="ageText">呱呱现在 0 个月 0 天</div>
+  <div style="font-size:18px;opacity:0.9;">出生：2025年5月28日</div>
+</div>
+
+<div class="section">
+  <h2>一周岁倒计时</h2>
+  <div class="countdown">
+    <div>呱呱落地一周年</div>
+    <div class="big" id="to1year">还剩 0 天</div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>生长曲线记录（WHO标准）</h2>
+  <canvas id="growthChart"></canvas>
+  <details style="margin-top:15px;">
+    <summary style="color:#ff6b81;cursor:pointer;">＋ 添加体检数据</summary>
+    <div style="padding:15px 0;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <input type="date" id="newDate">
+      <input type="number" step="0.1" placeholder="身高 cm" id="newHeight">
+      <input type="number" step="0.1" placeholder="体重 kg" id="newWeight">
+      <input type="number" step="0.1" placeholder="头围 cm（可选）" id="newHead">
+      <button onclick="addRecord()" style="grid-column:1/-1;">确认添加</button>
+    </div>
+  </details>
+  <div id="recordList"></div>
+</div>
+
+<div class="section">
+  <h2>耗材库存（红字=7天内用完）</h2>
+  <div id="supplies"></div>
+</div>
+
+<div class="section">
+  <h2>6-7月龄辅食计划</h2>
+  <div class="grid" id="foodPool"></div>
+  <div style="margin-top:15px;">
+    <strong>本周计划</strong>
+    <div id="weekPlan" style="min-height:60px;padding:15px;background:#fff9f5;border-radius:12px;margin-top:8px;"></div>
+  </div>
+</div>
+
+<div class="section">
+  <h2>辅食排敏记录</h2>
+  <div style="margin-bottom:12px;">
+    <select id="newAllergy"></select>
+    <button onclick="startAllergy()">开始排敏</button>
+  </div>
+  <div><strong>正在排敏：</strong><br><span id="testingList"></span></div>
+  <div style="margin-top:12px;"><strong>已通过：</strong><br><span id="passedList"></span></div>
+  <div style="margin-top:12px;"><strong>待排敏：</strong><br><span id="pendingList"></span></div>
+</div>
+
+<div class="section">
+  <h2>重要待办</h2>
+  <div id="todos"></div>
+  <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+    <input type="text" id="newTodo" placeholder="例如：2025.11.28 六个月儿保" style="flex:1;min-width:200px;">
+    <button onclick="addTodo()">+ 添加</button>
+  </div>
+</div>
+
+<div class="section">
+  <h2>全家数据同步</h2>
+  <button class="sync-btn" onclick="exportData()">📤 导出数据（复制到群）</button>
+  <button class="sync-btn" onclick="importDataPrompt()">📥 导入数据（从群粘贴）</button>
+  <p style="font-size:14px;color:#666;margin-top:10px;">改完数据后导出发群，其他人导入就能同步了～</p>
+</div>
+
+<div style="text-align:center;margin:60px 0;">
+  <button onclick="resetAll()" style="background:#ff3b30;padding:16px 40px;font-size:17px;border-radius:12px;">全部清空数据</button>
+</div>
+
+<div class="footer">呱呱专属妈妈神器 v5.1 • 数据通过群共享同步 • 2025年5月28日出生</div>
+
+<script>
+// ==================== 基础数据 ====================
+const BIRTHDAY = new Date('2025-05-28');
+const ONE_YEAR = new Date('2026-05-28');
+const WEEKDAYS = ['周日','周一','周二','周三','周四','周五','周六'];
+
+let records = JSON.parse(localStorage.getItem('baby_v5_records')) || [{date:"2025-05-28",height:50,weight:3.3,head:34}];
+
+const suppliesConfig = [
+  ["尿不湿","片",300,7,50],["棉柔巾","包",50,0.33,7],["好奇棉柔巾","包",50,0.33,7],
+  ["奶粉","罐",20,0.18,2],["AD滴剂","粒",180,1,30],["口水膏","支",10,0.1,7],
+  ["纽强面霜","瓶",5,0.033,7],["米粉","袋",10,0.07,7],["核桃油","瓶",5,0.033,7],["洗涤剂","瓶",5,0.033,7]
+];
+let supplies = JSON.parse(localStorage.getItem('baby_v5_supplies')) || suppliesConfig.map(c=>({name:c[0],unit:c[1],stock:c[2],daily:c[3],warn:c[4]}));
+
+const allFoods = ["米粉","南瓜泥","胡萝卜泥","西兰花泥","土豆泥","苹果泥","香蕉泥","牛油果泥","鸡蛋黄泥","鳕鱼泥"];
+let weekPlan = JSON.parse(localStorage.getItem('baby_v5_weekplan')) || [];
+
+let allergies = JSON.parse(localStorage.getItem('baby_v5_allergies')) || {
+  testing: [], passed: [], pending: allFoods.slice()
+};
+
+let todos = JSON.parse(localStorage.getItem('baby_v5_todos')) || [];
+
+// ==================== 保存 ====================
+function saveAll(){
+  localStorage.setItem('baby_v5_records', JSON.stringify(records));
+  localStorage.setItem('baby_v5_supplies', JSON.stringify(supplies));
+  localStorage.setItem('baby_v5_weekplan', JSON.stringify(weekPlan));
+  localStorage.setItem('baby_v5_allergies', JSON.stringify(allergies));
+  localStorage.setItem('baby_v5_todos', JSON.stringify(todos));
+}
+
+// ==================== 年龄倒计时 ====================
+function updateAge(){
+  const today = new Date();
+  const totalDays = Math.floor((today - BIRTHDAY)/86400000);
+  const months = Math.floor(totalDays/30), days = totalDays%30;
+  document.getElementById('ageText').textContent = `呱呱现在 ${months} 个月 ${days} 天`;
+  document.getElementById('to1year').textContent = `还剩 ${Math.ceil((ONE_YEAR-today)/86400000)} 天`;
+}
+updateAge(); setInterval(updateAge,60000);
+
+// ==================== 生长曲线 ====================
+const WHO_HEIGHT = {0:[47,48,49,50,51,52,53],1:[51,52,53,54,55,56,57],2:[54,55,56,57,58,59,60],3:[57,58,59,60,61,62,63],4:[60,61,62,63,64,65,66],5:[62,63,64,65,66,67,68],6:[64,65,66,67,68,69,70],7:[66,67,68,69,70,71,72],8:[68,69,70,71,72,73,74],9:[69,70,71,72,73,74,75],10:[71,72,73,74,75,76,77],11:[72,73,74,75,76,77,78],12:[73,74,75,76,77,78,79]};
+const WHO_WEIGHT = {0:[2.5,2.8,3.0,3.3,3.6,3.9,4.2],1:[3.4,3.7,4.0,4.3,4.7,5.1,5.4],2:[4.3,4.7,5.0,5.4,5.8,6.3,6.7],3:[5.0,5.4,5.8,6.2,6.7,7.2,7.7],4:[5.6,6.0,6.4,6.9,7.4,8.0,8.5],5:[6.1,6.5,6.9,7.4,8.0,8.6,9.2],6:[6.5,6.9,7.4,7.9,8.5,9.1,9.7],7:[6.9,7.3,7.8,8.3,8.9,9.6,10.2],8:[7.2,7.6,8.1,8.6,9.2,9.9,10.6],9:[7.5,7.9,8.4,8.9,9.6,10.3,11.0],10:[7.7,8.1,8.6,9.2,9.9,10.6,11.3],11:[7.9,8.3,8.9,9.4,10.1,10.9,11.6],12:[8.1,8.5,9.1,9.6,10.3,11.1,11.8]};
+
+function getMonth(d){return Math.floor((new Date(d)-BIRTHDAY)/(30*86400000));}
+
+function drawChart(){
+  const c=document.getElementById('growthChart'),ctx=c.getContext('2d');
+  c.width=c.offsetWidth*2; c.height=600;
+  ctx.clearRect(0,0,c.width,c.height);
+  const w=c.width,h=c.height,p=60;
+
+  // WHO参考线
+  for(let i=0;i<7;i++){
+    ctx.strokeStyle=i===3?'#ccc':'#eee';
+    ctx.setLineDash(i===3?[6,6]:[]);
+    ctx.beginPath();
+    for(let m=0;m<=12;m++){
+      const x=p+(w-2*p)*(m/12);
+      const y=h-p-(h-2*p)*((WHO_HEIGHT[m]?WHO_HEIGHT[m][i]:48+i*4-45)/(85-45));
+      m===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
+
+  // 身高曲线
+  ctx.strokeStyle='#ff6b81'; ctx.lineWidth=6;
+  ctx.beginPath();
+  records.forEach((r,i)=>{
+    const x=p+(w-2*p)*(getMonth(r.date)/12);
+    const y=h-p-(h-2*p)*((r.height-45)/(85-45));
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    ctx.fillStyle='#ff6b81'; ctx.beginPath(); ctx.arc(x,y,12,0,Math.PI*2); ctx.fill();
+  });
+  ctx.stroke();
+
+  // 体重曲线
+  ctx.strokeStyle='#54a0ff'; ctx.lineWidth=6;
+  ctx.beginPath();
+  records.forEach((r,i)=>{
+    const x=p+(w-2*p)*(getMonth(r.date)/12);
+    const y=h-p-(h-2*p)*((r.weight-2)/(13-2));
+    i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    ctx.beginPath(); ctx.arc(x,y,12,0,Math.PI*2); ctx.fillStyle='#54a0ff'; ctx.fill();
+  });
+  ctx.stroke();
+}
+
+function addRecord(){
+  const d=document.getElementById('newDate').value;
+  const h=+document.getElementById('newHeight').value;
+  const w=+document.getElementById('newWeight').value;
+  if(!d||!h||!w) return alert('请填写日期、身高、体重');
+  records.push({date:d,height:h,weight:w,head:+document.getElementById('newHead').value||null});
+  records.sort((a,b)=>new Date(a.date)-new Date(b.date));
+  saveAll(); drawChart(); renderRecords();
+}
+
+function deleteRecord(index){
+  if(confirm('确定删除这条记录吗？')){
+    records.splice(index,1);
+    saveAll(); drawChart(); renderRecords();
+  }
+}
+
+function renderRecords(){
+  const list=document.getElementById('recordList');
+  list.innerHTML = records.map((r,i)=>`
+    <div class="record-item">
+      <div><strong>${r.date} ${WEEKDAYS[new Date(r.date).getDay()]}（${getMonth(r.date)}个月）</strong></div>
+      <div>身高 ${r.height}cm 体重 ${r.weight}kg${r.head?` 头围 ${r.head}cm`:''}</div>
+      <button onclick="deleteRecord(${i})" style="background:#ff3b30;font-size:13px;padding:5px 10px;">删除</button>
+    </div>
+  `).join('');
+}
+
+// ==================== 耗材库存 ====================
+function renderSupplies(){
+  const el=document.getElementById('supplies'); el.innerHTML='';
+  supplies.forEach((s,i)=>{
+    const days = s.daily>0 ? Math.floor(s.stock/s.daily) : 999;
+    const warn = days<=s.warn ? 'warn' : '';
+    el.innerHTML += `
+      <div class="item">
+        <div class="item-name">${s.name}</div>
+        <div class="item-input">
+          <input type="number" value="${s.stock}" onchange="supplies[${i}].stock=Math.max(0,parseFloat(this.value)||0);saveAll();renderSupplies()">
+          <button onclick="supplies[${i}].stock+=1;saveAll();renderSupplies()">+1${s.unit}</button>
+        </div>
+        <div class="item-stock ${warn}">剩 ${s.stock}${s.unit}（约${days}天）</div>
+      </div>`;
+  });
+}
+
+// ==================== 辅食计划 ====================
+function renderFoodPool(){
+  const p=document.getElementById('foodPool'); p.innerHTML='';
+  allFoods.forEach(f=>{
+    const d=document.createElement('div');
+    d.className='food' + (weekPlan.includes(f)?' selected':'');
+    d.textContent=f;
+    d.onclick=()=>{const idx=weekPlan.indexOf(f);idx>-1?weekPlan.splice(idx,1):weekPlan.push(f);saveAll();renderFoodPool();renderWeekPlan();};
+    p.appendChild(d);
+  });
+}
+function renderWeekPlan(){
+  const el=document.getElementById('weekPlan');
+  el.innerHTML = weekPlan.length ?
+    weekPlan.map(f=>`<span class="tag" style="background:#ff8ba7;color:#fff;">${f}</span>`).join(' ') :
+    '<span style="color:#999;">点击上方食材加入本周计划～</span>';
+}
+
+// ==================== 排敏系统 ====================
+function renderAllergy(){
+  // 自动结束3天观察期
+  const now = new Date();
+  allergies.testing = allergies.testing.filter(item=>{
+    const end = new Date(item.start);
+    end.setDate(end.getDate()+3);
+    if(end <= now){
+      allergies.passed.push(item.food);
+      return false;
+    }
+    return true;
+  });
+
+  // 填充下拉框
+  const sel=document.getElementById('newAllergy');
+  sel.innerHTML='<option value="">选择开始排敏的食材</option>';
+  allergies.pending.forEach(f=>{
+    const opt=document.createElement('option');
+    opt.value=f; opt.textContent=f; sel.appendChild(opt);
+  });
+
+  // 显示
+  document.getElementById('testingList').innerHTML = allergies.testing.map(t=>{
+    const end=new Date(t.start); end.setDate(end.getDate()+3);
+    return `<span class="tag testing">${t.food}（${t.start} → ${end.toISOString().slice(0,10)}）
+      <button onclick="markPassed('${t.food}')" style="font-size:10px;padding:2px 6px;margin-left:6px;">通过</button>
+      <button onclick="deleteTesting('${t.food}')" style="font-size:10px;padding:2px 6px;background:#ff3b30;">删</button>
+    </span>`;
+  }).join('');
+
+  document.getElementById('passedList').innerHTML = allergies.passed.map(f=>`<span class="tag passed">${f}</span>`).join('');
+  document.getElementById('pendingList').innerHTML = allergies.pending.map(f=>`<span class="tag pending">${f}</span>`).join('');
+}
+
+function startAllergy(){
+  const food=document.getElementById('newAllergy').value;
+  if(!food) return alert('请选择食材');
+  allergies.testing.push({food, start:new Date().toISOString().slice(0,10)});
+  allergies.pending.splice(allergies.pending.indexOf(food),1);
+  saveAll(); renderAllergy();
+}
+function markPassed(food){
+  allergies.testing = allergies.testing.filter(t=>t.food!==food);
+  if(!allergies.passed.includes(food)) allergies.passed.push(food);
+  saveAll(); renderAllergy();
+}
+function deleteTesting(food){
+  allergies.testing = allergies.testing.filter(t=>t.food!==food);
+  if(!allergies.pending.includes(food)) allergies.pending.push(food);
+  saveAll(); renderAllergy();
+}
+
+// ==================== 待办事项 ====================
+function renderTodos(){
+  const el=document.getElementById('todos'); el.innerHTML='';
+  todos.forEach((t,i)=>{
+    const dateMatch = t.text.match(/(\d{4}[-.]\d{1,2}[-.]\d{1,2})/);
+    const week = dateMatch ? WEEKDAYS[new Date(dateMatch[0]).getDay()] : '';
+    el.innerHTML += `
+      <div class="item">
+        <input type="checkbox" ${t.done?'checked':''} onchange="todos[${i}].done=this.checked;saveAll();renderTodos()">
+        <label style="flex:1;${t.done?'text-decoration:line-through;opacity:0.6;':''}">${t.text} ${week?`<span style="color:#ff6b81;font-size:14px;">${week}</span>`:''}</label>
+        <button onclick="todos.splice(${i},1);saveAll();renderTodos()" style="background:#ff3b30;font-size:13px;">删除</button>
+      </div>`;
+  });
+}
+function addTodo(){
+  const input=document.getElementById('newTodo');
+  const text=input.value.trim();
+  if(!text) return;
+  todos.push({text, done:false});
+  input.value=''; saveAll(); renderTodos();
+}
+
+// ==================== 数据同步 ====================
+function exportData() {
+  const allData = { records, supplies, weekPlan, allergies, todos };
+  const json = JSON.stringify(allData);
+  navigator.clipboard.writeText(json).then(() => alert('数据已复制！发到群里让家人导入～'));
+}
+
+function importDataPrompt() {
+  const json = prompt('从群里粘贴 JSON 数据：');
+  if (json) {
+    try {
+      const data = JSON.parse(json);
+      records = data.records || [];
+      supplies = data.supplies || [];
+      weekPlan = data.weekPlan || [];
+      allergies = data.allergies || {};
+      todos = data.todos || [];
+      saveAll();
+      location.reload(); // 刷新显示新数据
+      alert('导入成功！页面已刷新～');
+    } catch (e) {
+      alert('JSON 格式错误，请检查粘贴的内容');
+    }
+  }
+}
+
+// ==================== 清空数据 ====================
+function resetAll(){
+  if(confirm('⚠️ 确定要清空全部数据吗？（不可恢复）')){
+    localStorage.clear();
+    location.reload();
+  }
+}
+
+// ==================== 初始化 ====================
+drawChart();
+renderRecords();
+renderSupplies();
+renderFoodPool();
+renderWeekPlan();
+renderAllergy();
+renderTodos();
+</script>
+</body>
+</html>
